@@ -26,8 +26,9 @@
     const w = ctx.winTile;
     const fItems = flowerItems(ctx);
 
+    const tItems = ctx.flags.ting ? [['報聽', 1]] : [];
     if (ctx.flags.tianhu) return finalize([['天胡', 24]].concat(fItems));
-    if (ctx.flags.dihu) return finalize([['地胡', 16]].concat(fItems));
+    if (ctx.flags.dihu) return finalize([['地胡', 16]].concat(fItems, tItems));
 
     // 放槍時，胡的那張若只能湊成刻子，那組刻子算明刻
     let winElsewhere = false;
@@ -102,6 +103,7 @@
     if (ctx.flags.kongDraw && ctx.selfDraw) add('槓上開花', 1);
     if (ctx.flags.lastTile) add(ctx.selfDraw ? '海底撈月' : '河底撈魚', 1);
     if (ctx.flags.robKong) add('搶槓', 1);
+    if (ctx.flags.ting) add('報聽', 1);
 
     return finalize(items.concat(fItems));
   }
@@ -131,6 +133,7 @@
     ['正花', '各 1', '與自己座位相符的花'],
     ['花槓', '2', '春夏秋冬或梅蘭竹菊湊齊'],
     ['獨聽', '1', '邊張、中洞、單吊只聽一張'],
+    ['報聽', '1', '按「聽牌」宣告後由電腦代打，胡了多 1 台'],
     ['槓上開花', '1', '槓後補牌自摸'],
     ['海底撈月 / 河底撈魚', '1', '最後一張自摸 / 最後一張放槍'],
     ['搶槓', '1', '胡別人加槓的牌'],

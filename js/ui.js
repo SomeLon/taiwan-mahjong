@@ -53,6 +53,44 @@
       UI.renderMine(game);
       for (let pid = 0; pid < 4; pid++) UI.renderRiver(game, pid);
       UI.renderInfo(game);
+      UI.renderPopup(game);
+    },
+
+    /* 吃碰槓胡、自摸的提示框，顯示在桌面中央 */
+    renderPopup(game) {
+      const el = $('callpop');
+      const pr = UI.prompt;
+      let html = '';
+      if (pr && pr.kind === 'claim') {
+        const o = pr.opts;
+        const who = o.robKong ? `${game.name(game.current)} 加槓` : `${game.name(game.lastDiscard ? game.lastDiscard.pid : game.current)} 打出`;
+        let btns = '';
+        if (o.hu) btns += `<button class="btn hu" data-act="hu" type="button">胡</button>`;
+        if (o.kong) btns += `<button class="btn" data-act="kong" type="button">槓</button>`;
+        if (o.pong) btns += `<button class="btn" data-act="pong" type="button">碰</button>`;
+        for (const combo of o.chi) {
+          const ts = [combo[0], combo[1], pr.tile.t].sort((a, b) => a - b);
+          btns += `<button class="btn secondary chi-btn" data-act="chi:${combo[0]},${combo[1]}" type="button">吃 ${ts
+            .map((t) => T(t, t === pr.tile.t ? 'called' : ''))
+            .join('')}</button>`;
+        }
+        btns += `<button class="btn ghost" data-act="pass" type="button">過</button>`;
+        const title = o.hu ? '可以胡牌！' : o.kong ? '可以槓' : o.pong ? '可以碰' : '可以吃';
+        html = `<div class="pop-title ${o.hu ? 'hot' : ''}">${title}</div>
+          <div class="pop-tile">${T(pr.tile.t, 'big')}<span>${who}</span></div>
+          <div class="pop-btns">${btns}</div>`;
+      } else if (pr && pr.kind === 'self' && !UI.selfDismissed) {
+        const o = pr.opts;
+        let btns = '';
+        if (o.hu) btns += `<button class="btn hu" data-act="hu" type="button">自摸</button>`;
+        for (const t of o.ankong) btns += `<button class="btn" data-act="ankong:${t}" type="button">暗槓 ${MJ.tileName(t)}</button>`;
+        for (const t of o.jiakong) btns += `<button class="btn" data-act="jiakong:${t}" type="button">加槓 ${MJ.tileName(t)}</button>`;
+        btns += `<button class="btn ghost" data-act="dismiss" type="button">不要，繼續出牌</button>`;
+        html = `<div class="pop-title ${o.hu ? 'hot' : ''}">${o.hu ? '可以自摸！' : '可以槓'}</div>
+          <div class="pop-btns">${btns}</div>`;
+      }
+      el.innerHTML = html;
+      el.hidden = !html;
     },
 
     renderTop(game) {
@@ -69,6 +107,7 @@
         <span class="pname">${p.name}</span>
         ${p.isHuman ? '' : `<span class="lvl">電腦·${MJ.LEVELS[UI.level].name}</span>`}
         ${dealer ? `<span class="badge">莊${game.streak ? ' 連' + game.streak : ''}</span>` : ''}
+        ${p.ting ? '<span class="badge ting">聽</span>' : ''}
         <span class="score ${sc < 0 ? 'neg' : sc > 0 ? 'pos' : ''}">${fmt(sc)}</span>
       </div>`;
     },
@@ -103,7 +142,7 @@
       const p = game.players[pid];
       const ld = game.lastDiscard;
       $('river-' + pid).innerHTML = p.river
-        .map((x) => T(x.t, ld && ld.tile.id === x.id ? 'last' : ''))
+        .map((x) => T(x.t, (ld && ld.tile.id === x.id ? 'last ' : '') + (p.tingTileId === x.id ? 'tingmark' : '')))
         .join('');
     },
 
@@ -145,6 +184,21 @@
       return res;
     },
 
+    tenpaiDiscards(game) {
+      const p = game.players[0];
+      const c = MJ.countsOf(p.hand);
+      const N = game.needSets(0);
+      const out = new Set();
+      if (p.hand.length !== 3 * N + 2) return out;
+      for (let t = 0; t < 34; t++) {
+        if (!c[t]) continue;
+        c[t]--;
+        if (MJ.shanten(c, N) === 0) out.add(t);
+        c[t]++;
+      }
+      return out;
+    },
+
     waitsHTML(info) {
       if (!info.waits.length) return '（聽的牌都看不到了）';
       return info.waits.map((w) => `${T(w.t)}<span>×${w.left}</span>`).join(' ') + `　共 <b>${info.total}</b> 張`;
@@ -174,28 +228,20 @@
         })
         .join('');
 
-      // 動作按鈕
+      // 動作列（吃碰槓胡的按鈕在桌面中央）
       let actions = '';
-      if (pr && pr.kind === 'self') {
-        if (pr.opts.hu) actions += `<button class="btn hu" data-act="hu" type="button">自摸</button>`;
-        for (const t of pr.opts.ankong) actions += `<button class="btn" data-act="ankong:${t}" type="button">暗槓 ${MJ.tileName(t)}</button>`;
-        for (const t of pr.opts.jiakong) actions += `<button class="btn" data-act="jiakong:${t}" type="button">加槓 ${MJ.tileName(t)}</button>`;
-        actions += `<span class="prompt-text">或點兩下手牌打出</span>`;
-      } else if (pr && pr.kind === 'discard') {
-        actions = `<span class="prompt-text">輪到你出牌：點一下選牌，再點一下打出</span>`;
-      } else if (pr && pr.kind === 'claim') {
-        const o = pr.opts;
-        actions += `<span class="claim-tile">${T(pr.tile.t)}<span class="prompt-text">${o.robKong ? '可以搶槓' : game.name(game.lastDiscard ? game.lastDiscard.pid : 0) + ' 打出'}</span></span>`;
-        if (o.hu) actions += `<button class="btn hu" data-act="hu" type="button">胡</button>`;
-        if (o.kong) actions += `<button class="btn" data-act="kong" type="button">槓</button>`;
-        if (o.pong) actions += `<button class="btn" data-act="pong" type="button">碰</button>`;
-        for (const combo of o.chi) {
-          const ts = [combo[0], combo[1], pr.tile.t].sort((a, b) => a - b);
-          actions += `<button class="btn secondary chi-btn" data-act="chi:${combo[0]},${combo[1]}" type="button">吃 ${ts
-            .map((t) => T(t, t === pr.tile.t ? 'called' : ''))
-            .join('')}</button>`;
+      if (p.ting && !UI.reveal) {
+        actions = `<span class="ting-badge">聽牌中</span><span class="prompt-text">電腦幫你自動摸打，胡了會自動喊胡</span>`;
+      } else if (canDiscard) {
+        const tp = UI.tenpaiDiscards(game);
+        const sel = p.hand.find((x) => x.id === UI.selectedId);
+        if (tp.size) {
+          if (sel && tp.has(sel.t)) actions += `<button class="btn ting" data-act="ting" type="button">打 ${MJ.tileName(sel.t)} 聽牌（＋1台）</button>`;
+          else actions += `<button class="btn ting" type="button" disabled>聽牌</button><span class="prompt-text">先選一張${UI.settings.hint ? '有綠點的' : '打了會聽的'}牌</span>`;
         }
-        actions += `<button class="btn ghost" data-act="pass" type="button">過</button>`;
+        actions += `<span class="prompt-text">點一下選牌，再點一下打出</span>`;
+      } else if (pr && pr.kind === 'claim') {
+        actions = `<span class="prompt-text">請在桌面中央選擇要不要吃碰</span>`;
       } else if (!UI.reveal && game.current !== 0) {
         actions = `<span class="prompt-text">${game.name(game.current)} 思考中…</span>`;
       }
@@ -203,7 +249,13 @@
       // 提示
       let hintHTML = '';
       if (hints) {
-        if (canDiscard) {
+        if (p.ting) {
+          const cc = MJ.countsOf(p.hand);
+          if (p.hand.length === 3 * game.needSets(0) + 2) cc[p.hand[p.hand.length - 1].t]--;
+          const ws = MJ.waits(cc, game.needSets(0));
+          const unseen = MJ.unseenFor(game, 0, true);
+          hintHTML = `<b>聽牌中</b>：${UI.waitsHTML({ waits: ws.map((t) => ({ t, left: unseen[t] })), total: ws.reduce((a, t) => a + unseen[t], 0) })}`;
+        } else if (canDiscard) {
           const sel = p.hand.find((x) => x.id === UI.selectedId);
           if (sel && hints.byType[sel.t]) hintHTML = `打 ${T(sel.t)} 聽：${UI.waitsHTML(hints.byType[sel.t])}`;
           else if (hints.shanten === -1) hintHTML = '<b>已經胡了，按「自摸」！</b>';
@@ -233,6 +285,7 @@
       if (UI.selectedId === id) {
         UI.selectedId = null;
         UI.prompt = null;
+        UI.selfDismissed = false;
         if (pr.kind === 'self') pr.resolve({ type: 'discard', tileId: id });
         else pr.resolve(id);
       } else {
@@ -244,8 +297,26 @@
     onAction(act) {
       const pr = UI.prompt;
       if (!pr) return;
+      if (act === 'dismiss') {
+        UI.selfDismissed = true;
+        UI.render();
+        return;
+      }
+      if (act === 'ting') {
+        if (pr.kind !== 'self' && pr.kind !== 'discard') return;
+        const id = UI.selectedId;
+        if (id === null) return;
+        UI.prompt = null;
+        UI.selectedId = null;
+        UI.selfDismissed = false;
+        if (pr.kind === 'self') pr.resolve({ type: 'discard', tileId: id, ting: true });
+        else pr.resolve({ tileId: id, ting: true });
+        UI.render();
+        return;
+      }
       UI.prompt = null;
       UI.selectedId = null;
+      UI.selfDismissed = false;
       let d = null;
       if (act === 'hu') d = { type: 'hu' };
       else if (act === 'pong') d = { type: 'pong' };
@@ -327,7 +398,7 @@
         <p class="sub">計分：每家付「底 + 台數 × 每台」。自摸三家都付，放槍只有放槍的人付。莊家相關的台只算在莊家那一家。剩下 16 張牌沒人胡就流局，莊家連莊。</p>
         <table class="rules-table">${MJ.TAI_TABLE.map((r) => `<tr><td>${r[0]}</td><td>${r[1]} 台</td><td>${r[2]}</td></tr>`).join('')}</table>
         <h3>操作</h3>
-        <p class="sub">點一下手牌選取，再點一下打出。有人打出你能吃、碰、槓、胡的牌時，下方會出現按鈕；吃只能吃上家（左邊）的牌。</p>
+        <p class="sub">點一下手牌選取，再點一下打出。有人打出你能吃、碰、槓、胡的牌時，桌面中央會跳出按鈕；吃只能吃上家（左邊）的牌。聽牌時可以選好要打的牌按「聽牌」宣告，之後由電腦自動摸打、自動胡牌，胡了多 1 台（報聽），但不能再換牌或吃碰。</p>
         <div class="modal-actions"><button class="btn" type="button" data-modal="${back || 'close'}">知道了</button></div>`);
     },
 
@@ -403,21 +474,29 @@
       const s = UI.settings;
       UI.level = s.level;
       UI.logs = [];
+      const autoDelay = () => UI.sleep(Math.max(350, SPEEDS[s.speed] || 500));
+      const lastDrawn = (game, drawn) => (drawn ? drawn.id : game.players[0].hand[game.players[0].hand.length - 1].id);
       const human = {
         isHuman: true,
-        selfAction(game, pid, opts) {
+        selfAction(game, pid, opts, drawn) {
+          if (game.players[pid].ting) {
+            return autoDelay().then(() => (opts.hu ? { type: 'hu' } : { type: 'discard', tileId: lastDrawn(game, drawn) }));
+          }
           return new Promise((resolve) => {
+            UI.selfDismissed = false;
             UI.prompt = { kind: 'self', opts, resolve };
             UI.render(game);
           });
         },
-        discard(game) {
+        discard(game, pid, drawn) {
+          if (game.players[pid].ting) return autoDelay().then(() => lastDrawn(game, drawn));
           return new Promise((resolve) => {
             UI.prompt = { kind: 'discard', resolve };
             UI.render(game);
           });
         },
         claim(game, pid, tile, opts) {
+          if (game.players[pid].ting) return autoDelay().then(() => (opts.hu ? { type: 'hu' } : null));
           return new Promise((resolve) => {
             UI.selectedId = null;
             UI.prompt = { kind: 'claim', tile, opts, resolve };
@@ -447,6 +526,10 @@
         if (b) return UI.onAction(b.dataset.act);
         const t = e.target.closest('.tile[data-id]');
         if (t) UI.onTileClick(+t.dataset.id);
+      });
+      $('callpop').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-act]');
+        if (b) UI.onAction(b.dataset.act);
       });
       $('modal').addEventListener('click', (e) => {
         const b = e.target.closest('[data-modal]');

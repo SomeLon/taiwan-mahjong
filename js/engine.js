@@ -74,6 +74,8 @@
         p.melds = [];
         p.flowers = [];
         p.river = [];
+        p.ting = false;
+        p.tingTileId = null;
       }
       this.lastDiscard = null;
       this.justDrawn = null;
@@ -304,7 +306,7 @@
             const act = await ctrl.selfAction(this, cur, opts, drawn);
             if (!act) break;
             if (act.type === 'discard') {
-              preDiscard = act.tileId;
+              preDiscard = act;
               break;
             }
             if (act.type === 'hu') {
@@ -332,11 +334,14 @@
             break;
           }
 
-          let tileId = preDiscard;
-          if (tileId === null) {
+          let dsc = preDiscard;
+          if (dsc === null) {
             if (!p.isHuman) await this.wait(1);
-            tileId = await ctrl.discard(this, cur, drawn);
+            dsc = await ctrl.discard(this, cur, drawn);
           }
+          // 可以回傳 tileId，或 { tileId, ting:true } 表示打這張宣告聽牌
+          const tileId = typeof dsc === 'object' && dsc !== null ? dsc.tileId : dsc;
+          const declareTing = typeof dsc === 'object' && dsc !== null && !!dsc.ting && !p.ting;
           const idx = p.hand.findIndex((x) => x.id === tileId);
           const tile = p.hand.splice(idx < 0 ? p.hand.length - 1 : idx, 1)[0];
           MJ.sortTiles(p.hand);
@@ -345,6 +350,11 @@
           this.lastDiscard = { pid: cur, tile };
           this.discardCount++;
           this.log(`${p.name} 打出 ${MJ.tileName(tile.t)}`);
+          if (declareTing) {
+            p.ting = true;
+            p.tingTileId = tile.id;
+            this.log(`${p.name} 宣告聽牌！`);
+          }
           this.render();
           await this.wait(0.5);
 
@@ -441,6 +451,7 @@
         lastTile: selfDraw ? this.wall.length <= DEAD : !!info.riverLast,
         tianhu: selfDraw && winner === this.dealer && this.drawCount[winner] === 1 && this.discardCount === 0,
         dihu: selfDraw && winner !== this.dealer && this.drawCount[winner] === 1 && !this.anyCall,
+        ting: !!p.ting,
       };
       const sc = MJ.scoreWin({
         concealed: c,
