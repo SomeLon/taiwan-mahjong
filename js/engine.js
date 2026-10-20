@@ -68,7 +68,7 @@
 
     setupRound() {
       this.handNo++;
-      this.wall = MJ.buildWall(this.rng);
+      this.wall = this.settings.fun ? MJ.buildFunWall(this.dealer, this.rng) : MJ.buildWall(this.rng);
       for (const p of this.players) {
         p.hand = [];
         p.melds = [];

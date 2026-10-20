@@ -10,7 +10,7 @@
   const NAMES = ['你', '下家', '對家', '上家'];
 
   function loadSettings() {
-    const def = { level: 'normal', rounds: 1, stakes: '50/20', speed: 'normal', hint: true };
+    const def = { level: 'normal', mode: 'normal', rounds: 1, stakes: '50/20', speed: 'normal', hint: true };
     try {
       const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       return Object.assign(def, s || {});
@@ -116,7 +116,7 @@
 
     renderTop(game) {
       $('topinfo').innerHTML =
-        `難度 <b>${MJ.LEVELS[UI.level].name}</b>　·　${game.settings.base}/${game.settings.perTai}（底/台）　·　共 <b>${game.settings.rounds}</b> 圈`;
+        `${game.settings.fun ? '<b>🎉 歡樂場</b>　·　' : ''}難度 <b>${MJ.LEVELS[UI.level].name}</b>　·　${game.settings.base}/${game.settings.perTai}（底/台）　·　共 <b>${game.settings.rounds}</b> 圈`;
     },
 
     seatHead(game, pid) {
@@ -378,6 +378,11 @@
         <div class="choices">
           ${Object.keys(MJ.LEVELS).map((k) => radio('level', k, s.level, MJ.LEVELS[k].name, MJ.LEVELS[k].desc)).join('')}
         </div>
+        <h3>模式</h3>
+        <div class="choices">
+          ${radio('mode', 'normal', s.mode, '一般場', '正常洗牌')}
+          ${radio('mode', 'fun', s.mode, '歡樂場', '大家都更容易拿到大牌（清一色、碰碰胡、三元…）')}
+        </div>
         <h3>打幾圈</h3>
         <div class="choices">
           ${radio('rounds', 1, s.rounds, '一圈', '約 4 局以上')}
@@ -413,6 +418,7 @@
         stakes: val('stakes') || '50/20',
         speed: val('speed') || 'normal',
         hint: $('opt-hint').checked,
+        mode: val('mode') || 'normal',
       };
       UI.settings = s;
       saveSettings(s);
@@ -534,7 +540,7 @@
       const ctrls = [human, MJ.makeAI(s.level), MJ.makeAI(s.level), MJ.makeAI(s.level)];
       const [base, perTai] = STAKES[s.stakes] || STAKES['50/20'];
       const game = new MJ.Game(
-        { names: NAMES, rounds: s.rounds, base, perTai, speed: SPEEDS[s.speed] || SPEEDS.normal },
+        { names: NAMES, rounds: s.rounds, base, perTai, speed: SPEEDS[s.speed] || SPEEDS.normal, fun: s.mode === 'fun' },
         ctrls,
         { render: (g) => UI.render(g), log: (m) => UI.log(m), sleep: (ms) => UI.sleep(ms) }
       );

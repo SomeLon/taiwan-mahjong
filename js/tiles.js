@@ -64,6 +64,54 @@
     return MJ.shuffle(w, rng);
   };
 
+  /* 歡樂場牌牆：每家分配一個「主題」（某一門花色或字牌），
+   * 發牌與摸牌時有較高機率拿到主題內的牌、以及手上已有的同一種牌，
+   * 讓清一色、混一色、碰碰胡、暗刻、三元、四喜等大牌更常出現。
+   * 牌還是 144 張不重複，只是排列順序有偏向。 */
+  MJ.buildFunWall = function (dealer, rng) {
+    const r = rng || Math.random;
+    const remaining = MJ.buildWall(r);
+    const themes = MJ.shuffle([0, 1, 2, 3], r); // 0~2 萬筒條，3 字牌
+    const second = themes.map(() => Math.floor(r() * 3)); // 字牌主題搭配的花色
+    const mixHonor = themes.map(() => r() < 0.5); // 花色主題要不要帶字（混一色）
+    const inTheme = (pid, t) => {
+      if (t >= 34) return false;
+      const th = themes[pid];
+      if (th === 3) return t >= 27 || Math.floor(t / 9) === second[pid];
+      if (t >= 27) return mixHonor[pid];
+      return Math.floor(t / 9) === th;
+    };
+    const held = [0, 1, 2, 3].map(() => new Array(34).fill(0));
+    // 第 i 張牌會落到誰手上：前 64 張是發牌（每家每次 4 張），之後大約依序輪流摸
+    const owner = (i) => (i < 64 ? (dealer + Math.floor((i % 16) / 4)) % 4 : (dealer + (i - 64)) % 4);
+    const BIASED = 128; // 牌尾（補花、補槓與留牌）維持隨機
+    const wall = [];
+    for (let i = 0; i < 144; i++) {
+      let idx = -1;
+      if (i < BIASED) {
+        const pid = owner(i);
+        const q = i < 64 ? 0.6 : 0.5;
+        if (r() < q) {
+          const cand = [];
+          const same = [];
+          for (let j = 0; j < remaining.length; j++) {
+            const t = remaining[j].t;
+            if (!inTheme(pid, t)) continue;
+            cand.push(j);
+            if (held[pid][t] >= 1 && held[pid][t] <= 2) same.push(j);
+          }
+          const use = same.length && r() < 0.4 ? same : cand;
+          if (use.length) idx = use[Math.floor(r() * use.length)];
+        }
+      }
+      if (idx < 0) idx = Math.floor(r() * remaining.length);
+      const tile = remaining.splice(idx, 1)[0];
+      wall.push(tile);
+      if (i < BIASED && tile.t < 34) held[owner(i)][tile.t]++;
+    }
+    return wall;
+  };
+
   /* 產生一張牌的 HTML。t 為 null 代表牌背 */
   MJ.tileHTML = function (t, cls, attrs) {
     cls = cls || '';
