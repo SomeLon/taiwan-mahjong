@@ -82,6 +82,6 @@
       sc = 'f';
       inner = `<span class="th">${FLOWERS[t - 34]}</span><span class="fnum">${((t - 34) % 4) + 1}</span>`;
     }
-    return `<div class="tile s-${sc} ${cls}" ${attrs} title="${MJ.tileName(t)}">${inner}</div>`;
+    return `<div class="tile s-${sc} ${cls}" data-t="${t}" ${attrs} title="${MJ.tileName(t)}">${inner}</div>`;
   };
 })();

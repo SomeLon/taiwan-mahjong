@@ -32,6 +32,7 @@
     game: null,
     prompt: null,
     selectedId: null,
+    focusT: null,
     logs: [],
     reveal: false,
     level: 'normal',
@@ -54,6 +55,26 @@
       for (let pid = 0; pid < 4; pid++) UI.renderRiver(game, pid);
       UI.renderInfo(game);
       UI.renderPopup(game);
+      UI.markSame(game);
+    },
+
+    /* 把場上同一種牌加外框：手牌選取中的牌，或點過的牌 */
+    focusType(game) {
+      if (UI.selectedId !== null) {
+        const sel = game.players[0].hand.find((x) => x.id === UI.selectedId);
+        if (sel) return sel.t;
+      }
+      return UI.focusT;
+    },
+    markSame(game) {
+      const ft = UI.focusType(game);
+      document.querySelectorAll('#table .tile[data-t]').forEach((el) => {
+        el.classList.toggle('same', ft !== null && ft !== undefined && +el.dataset.t === ft);
+      });
+    },
+    toggleFocus(t) {
+      UI.focusT = UI.focusT === t ? null : t;
+      UI.render();
     },
 
     /* 吃碰槓胡、自摸的提示框，顯示在桌面中央 */
@@ -281,7 +302,13 @@
     /* ---------- 操作 ---------- */
     onTileClick(id) {
       const pr = UI.prompt;
-      if (!pr || (pr.kind !== 'self' && pr.kind !== 'discard')) return;
+      if (!pr || (pr.kind !== 'self' && pr.kind !== 'discard') || UI.game.players[0].ting) {
+        // 不是出牌時間：只做「找同樣的牌」
+        const x = UI.game && UI.game.players[0].hand.find((h) => h.id === id);
+        if (x) UI.toggleFocus(x.t);
+        return;
+      }
+      UI.focusT = null;
       if (UI.selectedId === id) {
         UI.selectedId = null;
         UI.prompt = null;
@@ -526,6 +553,18 @@
         if (b) return UI.onAction(b.dataset.act);
         const t = e.target.closest('.tile[data-id]');
         if (t) UI.onTileClick(+t.dataset.id);
+      });
+      // 點牌河、副露、花牌：框出場上同樣的牌
+      $('table').addEventListener('click', (e) => {
+        if (e.target.closest('#callpop, #hand, [data-act]')) return;
+        const t = e.target.closest('.tile[data-t]');
+        if (t && UI.game) UI.toggleFocus(+t.dataset.t);
+      });
+      // 點對話框外面：結算畫面或台數表就關閉
+      $('overlay').addEventListener('click', (e) => {
+        if (e.target !== $('overlay')) return;
+        const b = $('modal').querySelector('[data-modal="next"], [data-modal="close"]');
+        if (b) b.click();
       });
       $('callpop').addEventListener('click', (e) => {
         const b = e.target.closest('[data-act]');
