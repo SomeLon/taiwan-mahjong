@@ -309,11 +309,28 @@ button { font: inherit; }
 }
 .modal h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: 0.04em; }
 .modal h3 { margin: 18px 0 8px; font-size: 15px; color: var(--ink-dim); font-weight: 500; }
+.modal:has(.set-list) { width: min(460px, 100%); }
 .modal .sub { color: var(--ink-dim); margin: 0 0 12px; font-size: 14px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-.title-tiles { display: flex; gap: 4px; margin: 4px 0 14px; }
-.title-tiles .tile { --w: 34px; }
+.title-tiles { display: flex; gap: 3px; }
+.title-tiles .tile { --w: 26px; }
+/* 開始畫面：一列一個設定，一頁看完 */
+.start-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.start-head h2 { margin: 0; font-size: 22px; }
+.set-list { display: grid; gap: 10px; }
+.set-row { display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 8px; }
+.set-label { color: var(--ink-dim); font-size: 14px; }
+.seg { display: flex; gap: 4px; padding: 3px; border-radius: 10px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--line); }
+.seg-opt { flex: 1; min-width: 0; }
+.seg-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-opt span {
+  display: block; text-align: center; padding: 7px 4px; border-radius: 7px; cursor: pointer;
+  font-size: 15px; font-weight: 500; white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.seg-opt span:hover { background: rgba(255, 255, 255, 0.06); }
+.seg-opt input:checked + span { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg-opt input:focus-visible + span { outline: 2px solid var(--accent); }
 
 .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .choices.two { grid-template-columns: repeat(4, 1fr); }
@@ -415,4 +432,8 @@ button { font: inherit; }
   .callpop { position: fixed; top: 46%; width: calc(100vw - 24px); }
   .choices.two { grid-template-columns: repeat(2, 1fr); }
   .modal { padding: 14px 12px; }
+  .title-tiles .tile { --w: 20px; }
+  .start-head h2 { font-size: 19px; }
+  .set-row { grid-template-columns: 42px 1fr; }
+  .seg-opt span { font-size: 14px; padding: 7px 2px; }
 }

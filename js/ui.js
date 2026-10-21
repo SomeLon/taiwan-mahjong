@@ -363,38 +363,22 @@
 
     showStart() {
       const s = UI.settings;
-      const radio = (name, val, cur, title, desc) =>
-        `<label class="choice"><input type="radio" name="${name}" value="${val}" ${String(cur) === String(val) ? 'checked' : ''}><span><b>${title}</b>${desc ? `<small>${desc}</small>` : ''}</span></label>`;
+      const opt = (name, val, cur, title) =>
+        `<label class="seg-opt"><input type="radio" name="${name}" value="${val}" ${String(cur) === String(val) ? 'checked' : ''}><span>${title}</span></label>`;
+      const row = (label, opts) => `<div class="set-row"><div class="set-label">${label}</div><div class="seg">${opts}</div></div>`;
       UI.openModal(`
-        <div class="title-tiles">${[0, 13, 26, 27, 31, 32, 33, 34].map((t) => T(t)).join('')}</div>
-        <h2>台灣十六張麻將</h2>
-        <p class="sub">你和三位電腦對打。吃、碰、槓、補花、自摸、放槍都照台灣規則算台。</p>
-        <h3>電腦難度</h3>
-        <div class="choices">
-          ${Object.keys(MJ.LEVELS).map((k) => radio('level', k, s.level, MJ.LEVELS[k].name, MJ.LEVELS[k].desc)).join('')}
+        <div class="start-head">
+          <div class="title-tiles">${[0, 13, 26, 31, 32, 33].map((t) => T(t)).join('')}</div>
+          <h2>台灣十六張麻將</h2>
         </div>
-        <h3>模式</h3>
-        <div class="choices">
-          ${radio('mode', 'normal', s.mode, '一般場', '正常洗牌')}
-          ${radio('mode', 'fun', s.mode, '歡樂場', '大家都更容易拿到大牌（清一色、碰碰胡、三元…）')}
+        <div class="set-list">
+          ${row('難度', Object.keys(MJ.LEVELS).map((k) => opt('level', k, s.level, MJ.LEVELS[k].name)).join(''))}
+          ${row('模式', opt('mode', 'normal', s.mode, '一般場') + opt('mode', 'fun', s.mode, '歡樂場'))}
+          ${row('圈數', opt('rounds', 1, s.rounds, '一圈') + opt('rounds', 2, s.rounds, '兩圈') + opt('rounds', 4, s.rounds, '四圈'))}
+          ${row('底/台', Object.keys(STAKES).map((k) => opt('stakes', k, s.stakes, k)).join(''))}
+          ${row('速度', opt('speed', 'slow', s.speed, '慢') + opt('speed', 'normal', s.speed, '普通') + opt('speed', 'fast', s.speed, '快'))}
         </div>
-        <h3>打幾圈</h3>
-        <div class="choices">
-          ${radio('rounds', 1, s.rounds, '一圈', '約 4 局以上')}
-          ${radio('rounds', 2, s.rounds, '半將（兩圈）', '')}
-          ${radio('rounds', 4, s.rounds, '一將（四圈）', '東南西北')}
-        </div>
-        <h3>底 / 台</h3>
-        <div class="choices two">
-          ${Object.keys(STAKES).map((k) => radio('stakes', k, s.stakes, k, '')).join('')}
-        </div>
-        <h3>電腦出牌速度</h3>
-        <div class="choices">
-          ${radio('speed', 'slow', s.speed, '慢', '')}
-          ${radio('speed', 'normal', s.speed, '普通', '')}
-          ${radio('speed', 'fast', s.speed, '快', '')}
-        </div>
-        <label class="check"><input type="checkbox" id="opt-hint" ${s.hint ? 'checked' : ''}> 顯示聽牌提示（綠點代表打這張就聽牌）</label>
+        <label class="check"><input type="checkbox" id="opt-hint" ${s.hint ? 'checked' : ''}> 顯示聽牌提示</label>
         <div class="modal-actions">
           <button class="btn ghost" type="button" data-modal="rules">台數表</button>
           <button class="btn big" type="button" data-modal="start">開始遊戲</button>
