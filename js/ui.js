@@ -126,7 +126,6 @@
       return `<div class="seat-head">
         <span class="wind">${MJ.WINDS[game.seatWind(pid)]}</span>
         <span class="pname">${p.name}</span>
-        ${p.isHuman ? '' : `<span class="lvl">電腦·${MJ.LEVELS[UI.level].name}</span>`}
         ${dealer ? `<span class="badge">莊${game.streak ? ' 連' + game.streak : ''}</span>` : ''}
         ${p.ting ? '<span class="badge ting">聽</span>' : ''}
         <span class="score ${sc < 0 ? 'neg' : sc > 0 ? 'pos' : ''}">${fmt(sc)}</span>
@@ -150,13 +149,11 @@
       const p = game.players[pid];
       const el = $('seat-' + pid);
       el.classList.toggle('active', game.current === pid && !UI.reveal);
-      const hand = UI.reveal
-        ? `<div class="backs">${p.hand.map((x) => T(x.t)).join('')}</div>`
-        : `<div class="backs">${p.hand.map(() => T(null)).join('')}</div>`;
+      // 精簡：不畫對手手牌，只顯示張數、花與亮出的牌
+      const fl = p.flowers.length ? `<span class="opp-fl">${p.flowers.map((f) => T(f.t, 'mini')).join('')}</span>` : '';
       el.innerHTML = `${UI.seatHead(game, pid)}
-        <div class="row">${UI.flowersHTML(p)}</div>
-        <div class="melds">${p.melds.map((m) => UI.meldHTML(m, false)).join('')}</div>
-        ${hand}`;
+        <div class="opp-sub"><span class="cnt">手牌 ${p.hand.length}</span>${fl}</div>
+        ${p.melds.length ? `<div class="melds opp-melds">${p.melds.map((m) => UI.meldHTML(m, false, 'mini')).join('')}</div>` : ''}`;
     },
 
     renderRiver(game, pid) {
@@ -170,10 +167,9 @@
     renderInfo(game) {
       const recent = UI.logs.slice(-5).map((s) => `<div>${s}</div>`).join('');
       $('info').innerHTML = `
-        <div class="round">${MJ.WINDS[Math.min(game.roundWind, 3)]}風圈 · 第 ${game.handNo} 局</div>
-        <div class="label">剩餘牌數</div>
-        <div class="big-num">${game.wallLeft()}</div>
-        <div class="label">莊家：${game.players[game.dealer].name}${game.streak ? `（連 ${game.streak}）` : ''}</div>
+        <div class="round">${MJ.WINDS[Math.min(game.roundWind, 3)]}風圈 第${game.handNo}局</div>
+        <div class="big-num">${game.wallLeft()}<small> 張</small></div>
+        <div class="label">莊 ${game.players[game.dealer].name}${game.streak ? ` 連${game.streak}` : ''}</div>
         <div class="logs">${recent}</div>`;
     },
 
@@ -260,7 +256,7 @@
           if (sel && tp.has(sel.t)) actions += `<button class="btn ting" data-act="ting" type="button">打 ${MJ.tileName(sel.t)} 聽牌（＋1台）</button>`;
           else actions += `<button class="btn ting" type="button" disabled>聽牌</button><span class="prompt-text">先選一張${UI.settings.hint ? '有綠點的' : '打了會聽的'}牌</span>`;
         }
-        actions += `<span class="prompt-text">點一下選牌，再點一下打出</span>`;
+        if (!tp.size) actions += `<span class="prompt-text">點兩下打出</span>`;
       } else if (pr && pr.kind === 'claim') {
         actions = `<span class="prompt-text">請在桌面中央選擇要不要吃碰</span>`;
       } else if (!UI.reveal && game.current !== 0) {
@@ -292,11 +288,10 @@
       el.innerHTML = `${UI.seatHead(game, 0)}
         <div class="mine-top">
           ${UI.flowersHTML(p)}
-          <div class="melds">${p.melds.map((m) => UI.meldHTML(m, true)).join('')}</div>
+          <div class="melds">${p.melds.map((m) => UI.meldHTML(m, true, 'mini')).join('')}</div>
         </div>
         <div class="hand ${canDiscard ? 'can-discard' : ''}" id="hand">${handHTML}</div>
-        <div class="actionbar">${actions}</div>
-        <div class="hint">${hintHTML}</div>`;
+        <div class="actionbar">${actions}${hintHTML ? `<span class="hint">${hintHTML}</span>` : ''}</div>`;
     },
 
     /* ---------- 操作 ---------- */
@@ -436,41 +431,44 @@
     },
 
     resultHTML(game, r) {
+      const cls = (n) => (n < 0 ? 'neg' : n > 0 ? 'pos' : '');
       let head;
       if (r.type === 'draw') {
-        head = `<div class="big-result">流局</div><p class="sub">牌摸完了，莊家連莊。</p>`;
+        head = `<div class="res-head"><div class="big-result">流局</div><span class="sub">莊家連莊</span></div>`;
       } else {
         const w = game.players[r.winner].name;
-        const how = r.special ? r.special : r.selfDraw ? '自摸' : r.robKong ? `搶槓（${game.name(r.loser)}）` : `胡牌（${game.name(r.loser)} 放槍）`;
-        head = `<div class="big-result ${r.winner === 0 ? 'win' : ''}">${w} ${how}</div>`;
+        const how = r.special ? r.special : r.selfDraw ? '自摸' : r.robKong ? `搶槓 ${game.name(r.loser)}` : `胡 ${game.name(r.loser)} 放槍`;
+        const dt = r.dealerItems.reduce((s, x) => s + x[1], 0);
+        head = `<div class="res-head"><div class="big-result ${r.winner === 0 ? 'win' : ''}">${w} ${how}</div>
+          <div class="res-tai">${r.tai}<small> 台${dt ? ` ＋莊${dt}` : ''}</small></div></div>`;
       }
       let body = '';
       if (r.type === 'win') {
         const p = game.players[r.winner];
         const hand = p.hand.map((x) => T(x.t, x.id === r.winTileId ? 'win' : '')).join('');
-        body += `<h3>胡牌牌型</h3><div class="res-hand">
+        body += `<div class="res-hand">
           ${p.flowers.length ? `<div class="flowers">${p.flowers.map((f) => T(f.t)).join('')}</div>` : ''}
           ${p.melds.map((m) => UI.meldHTML(m, true)).join('')}
           <div class="meld">${hand}</div></div>`;
-        const items = r.items.length ? r.items : [['無台（屁胡）', 0]];
-        body += `<h3>台數</h3><div class="tai-list">
-          ${items.map((x) => `<div>${x[0]}</div><div class="t">${x[1]} 台</div>`).join('')}
-          ${r.dealerItems.map((x) => `<div>${x[0]}（莊家那家才算）</div><div class="t">${x[1]} 台</div>`).join('')}
-          <div class="total">合計</div><div class="t total">${r.tai} 台${r.dealerItems.length ? ` ＋ 莊 ${r.dealerItems.reduce((s, x) => s + x[1], 0)}` : ''}</div>
-        </div>`;
-        body += `<h3>收付</h3><div class="pay-list">
-          ${r.detail.map((d) => `<div>${game.name(d.pid)} 付給 ${game.name(r.winner)}</div><div>${d.tai} 台</div><div class="neg">-${d.amt}</div>`).join('')}
-        </div>`;
+        const items = r.items.length ? r.items : [['屁胡', 0]];
+        body += `<div class="chips">${items.map((x) => `<span class="chip">${x[0]} <b>${x[1]}</b></span>`).join('')}${r.dealerItems
+          .map((x) => `<span class="chip dealer" title="只算在莊家那一家">${x[0]} <b>${x[1]}</b></span>`)
+          .join('')}</div>`;
       }
-      body += `<h3>目前分數</h3><div class="pay-list">
-        ${game.players.map((p) => `<div>${p.name}</div><div></div><div class="${p.score < 0 ? 'neg' : p.score > 0 ? 'pos' : ''}">${fmt(p.score)}</div>`).join('')}
+      // 本局收付與總分合成一張表
+      const pay = r.payments || [0, 0, 0, 0];
+      body += `<div class="score-table">
+        <div class="hd"></div><div class="hd">本局</div><div class="hd">總分</div>
+        ${game.players
+          .map((p) => `<div class="nm">${p.name}${r.winner === p.id ? ' 🀄' : r.loser === p.id ? ' 💥' : ''}</div><div class="${cls(pay[p.id])}">${pay[p.id] ? fmt(pay[p.id]) : '—'}</div><div class="${cls(p.score)}"><b>${fmt(p.score)}</b></div>`)
+          .join('')}
       </div>`;
-      body += `<h3>各家手牌</h3><div class="others">
+      body += `<details class="others-wrap"><summary>看各家手牌</summary><div class="others">
         ${game.players
           .filter((p) => r.type === 'draw' || p.id !== r.winner)
           .map((p) => `<div class="o-row"><span class="nm">${p.name}</span>${p.melds.map((m) => UI.meldHTML(m, true)).join('')}<div class="meld">${p.hand.map((x) => T(x.t)).join('')}</div></div>`)
           .join('')}
-      </div>`;
+      </div></details>`;
       return head + body;
     },
 
@@ -481,7 +479,7 @@
         UI.render(game);
         const last = game.gameOver;
         UI.openModal(`${UI.resultHTML(game, r)}
-          <div class="modal-actions"><button class="btn big" type="button" data-modal="next">${last ? '看最後結果' : '下一局'}</button></div>`);
+          <div class="modal-actions"><span class="sub tap-hint">點框外也可以繼續</span><button class="btn big" type="button" data-modal="next">${last ? '看最後結果' : '下一局'}</button></div>`);
         UI.onNext = () => {
           UI.reveal = false;
           UI.resultWinId = null;
