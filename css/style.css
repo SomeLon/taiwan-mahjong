@@ -236,8 +236,8 @@ button { font: inherit; }
 /* 中央吃碰提示框 */
 .center { position: relative; }
 .callpop {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  z-index: 20; min-width: 260px; max-width: calc(100% - 16px);
+  position: fixed; left: 50%; top: 40%; transform: translateX(-50%);
+  z-index: 20; min-width: 260px; max-width: calc(100vw - 16px);
   padding: 16px 18px 18px; border-radius: 16px;
   background: linear-gradient(180deg, #1e5440, #123826);
   border: 2px solid var(--accent);
@@ -246,7 +246,7 @@ button { font: inherit; }
   animation: pop-in 0.18s ease-out;
 }
 .callpop[hidden] { display: none; }
-@keyframes pop-in { from { transform: translate(-50%, -50%) scale(0.85); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+@keyframes pop-in { from { transform: translateX(-50%) scale(0.85); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
 .pop-title { font-size: 22px; font-weight: 900; letter-spacing: 0.08em; margin-bottom: 10px; color: var(--accent); }
 .pop-title.hot { color: #ff7a72; animation: pulse 0.9s ease-in-out infinite alternate; }
 @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
@@ -429,7 +429,11 @@ button { font: inherit; }
   .score-table { font-size: 14px; gap: 3px 12px; }
   .modal-actions { margin-top: 12px; }
   .info .logs { display: none; }
-  .callpop { position: fixed; top: 46%; width: calc(100vw - 24px); }
+  .callpop { width: calc(100vw - 24px); padding: 10px 12px 12px; }
+  .pop-title { font-size: 18px; margin-bottom: 6px; }
+  .pop-tile { margin-bottom: 8px; }
+  .pop-btns { gap: 8px; }
+  .pop-btns .btn { padding: 8px 14px; font-size: 16px; }
   .choices.two { grid-template-columns: repeat(2, 1fr); }
   .modal { padding: 14px 12px; }
   .title-tiles .tile { --w: 20px; }

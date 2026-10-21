@@ -77,6 +77,20 @@
       UI.render();
     },
 
+    /* 把提示框放在桌面中央，但一定在自己手牌區的上方，不會擋到手牌 */
+    placePopup() {
+      const el = $('callpop');
+      const center = $('center').getBoundingClientRect();
+      const mine = $('seat-0').getBoundingClientRect();
+      const h = el.offsetHeight;
+      const topMin = 8;
+      const bottomMax = mine.top - 8; // 不能超過自己手牌區的上緣
+      let top = center.top + (center.height - h) / 2;
+      if (top + h > bottomMax) top = bottomMax - h;
+      if (top < topMin) top = topMin;
+      el.style.top = top + 'px';
+    },
+
     /* 吃碰槓胡、自摸的提示框，顯示在桌面中央 */
     renderPopup(game) {
       const el = $('callpop');
@@ -112,6 +126,7 @@
       }
       el.innerHTML = html;
       el.hidden = !html;
+      if (html) UI.placePopup();
     },
 
     renderTop(game) {
@@ -535,6 +550,11 @@
     },
 
     init() {
+      const replace = () => {
+        if (!$('callpop').hidden) UI.placePopup();
+      };
+      window.addEventListener('resize', replace);
+      window.addEventListener('scroll', replace, { passive: true });
       UI.settings = loadSettings();
       $('seat-0').addEventListener('click', (e) => {
         const b = e.target.closest('[data-act]');
