@@ -28,6 +28,8 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; min-height: 100%; }
+/* 手機轉向時不要自動放大字體（iOS 轉橫向時會放大字，造成畫面跳動） */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-anchor: none; }
 
 body {
   background:
@@ -104,6 +106,10 @@ button { font: inherit; }
 .s-p .tn, .s-p .ts { color: var(--c-p); }
 .s-s .tn, .s-s .ts { color: var(--c-s); }
 .tile .th { font-size: calc(var(--w) * 0.66); color: var(--c-z); }
+/* 筒、條的圖案 */
+.tile .tf { width: 88%; height: 88%; display: block; }
+.s-m .tn { font-size: calc(var(--w) * 0.5); }
+.s-m .ts { font-size: calc(var(--w) * 0.46); margin-top: 0; }
 .s-z4 .th { color: var(--c-m); }
 .s-z5 .th { color: var(--c-s); }
 .tile .tb {
@@ -398,20 +404,25 @@ button { font: inherit; }
   .hand { gap: 1px; }
   .brand { font-size: 14px; }
   .topbtns .btn.ghost { padding: 4px 8px; font-size: 13px; }
-  .table { gap: 6px; padding: 6px 6px 8px; grid-template-rows: auto auto auto; min-height: 0; }
+  .topbar { height: 46px; }
+  .table { gap: 6px; padding: 6px 6px 8px; grid-template-rows: auto 1fr auto; min-height: calc(100dvh - 46px); }
+  .center { align-content: center; }
+  .mine-top { min-height: calc(var(--ts) * 0.78 * 1.36 + 4px); }
+  .actionbar { height: 30px; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }
   .seat { padding: 5px 6px; border-radius: 10px; }
   .seat-head { font-size: 12px; gap: 4px; margin-bottom: 3px; }
   .wind { width: 18px; height: 18px; font-size: 11px; }
   .badge { font-size: 10px; padding: 0 4px; }
   .score { font-size: 12px; }
   .cnt { font-size: 11px; padding: 0 6px; }
-  .opp-melds .tile.mini { --w: calc(var(--ts) * 0.62); }
+  .opp-melds .tile.mini { --w: calc(var(--ts) * 0.72); }
   .opp-melds .meld { padding: 1px; }
   .center { grid-template-columns: 1fr auto 1fr; padding: 4px; gap: 4px; border: 0; }
   .river { gap: 2px 1px; min-height: 0; }
-  .river .tile { --w: calc(var(--ts) * 0.86); }
-  .river-0, .river-2 { width: calc((var(--ts) * 0.86 + 1px) * 12); max-width: 100%; }
-  .river-1, .river-3 { width: calc((var(--ts) * 0.86 + 1px) * 4); }
+  .river .tile { --w: calc(var(--ts) * 0.98); }
+  .river-0, .river-2 { width: calc((var(--ts) * 0.98 + 1px) * 12); max-width: 100%; }
+  .river-1, .river-3 { width: calc((var(--ts) * 0.98 + 1px) * 5); }
+  .info { width: 84px; }
   .info { width: 92px; padding: 6px 4px; font-size: 11px; }
   .info .round { font-size: 12px; margin-bottom: 2px; }
   .info .big-num { font-size: 20px; }
@@ -440,4 +451,106 @@ button { font: inherit; }
   .start-head h2 { font-size: 19px; }
   .set-row { grid-template-columns: 42px 1fr; }
   .seg-opt span { font-size: 14px; padding: 7px 2px; }
+}
+
+/* ---------- 手機橫向：整個畫面固定在一頁，不捲動、不跳動 ---------- */
+@media (orientation: landscape) and (max-height: 520px) {
+  :root {
+    --bar: 34px;
+    --ts: clamp(14px, 4.6dvh, 22px);
+    --tw: clamp(18px, min(calc((100vw - 40px) / 18.2), 10dvh), 40px);
+  }
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  .topbar { height: var(--bar); padding: 0 10px; gap: 8px; }
+  .brand { font-size: 13px; }
+  .brand-mark { width: 20px; height: 24px; font-size: 13px; }
+  .topinfo { font-size: 12px; }
+  .topbtns .btn.ghost { padding: 2px 8px; font-size: 12px; }
+
+  .table {
+    height: calc(100dvh - var(--bar));
+    min-height: 0;
+    max-width: none;
+    padding: 4px 8px 6px;
+    gap: 4px 6px;
+    grid-template-columns: minmax(150px, 21%) minmax(0, 1fr);
+    grid-template-rows: repeat(3, minmax(0, 1fr)) auto;
+    grid-template-areas:
+      "left center"
+      "top center"
+      "right center"
+      "bottom bottom";
+  }
+  .seat { padding: 3px 6px; border-radius: 8px; overflow: hidden; min-height: 0; }
+  .seat-head { font-size: 12px; gap: 4px; margin-bottom: 2px; }
+  .wind { width: 17px; height: 17px; font-size: 10px; }
+  .badge { font-size: 10px; padding: 0 4px; }
+  .score { font-size: 12px; }
+  .cnt { font-size: 10px; padding: 0 6px; }
+  .opp-sub { gap: 4px; }
+  .opp-fl .tile { --w: calc(var(--ts) * 0.6); }
+  .opp-melds { margin-top: 2px; gap: 3px; }
+  .opp-melds .meld { padding: 1px; }
+  .opp-melds .tile.mini { --w: calc(var(--ts) * 0.6); margin-bottom: 2px; }
+
+  .center { padding: 2px; gap: 3px; border: 0; overflow: hidden; min-height: 0; align-content: center; }
+  .river { gap: 2px 1px; min-height: 0; }
+  .river .tile { --w: calc(var(--ts) * 0.92); }
+  .river-0, .river-2 { width: calc((var(--ts) * 0.92 + 1px) * 16); max-width: 100%; }
+  .river-1, .river-3 { width: calc((var(--ts) * 0.92 + 1px) * 8); }
+  .info { width: 96px; padding: 4px; font-size: 11px; }
+  .info .round { font-size: 12px; margin-bottom: 0; }
+  .info .big-num { font-size: 18px; }
+  .info .logs { display: none; }
+
+  /* 自己：名字與吃碰的牌放同一列，高度固定 */
+  .seat-bottom {
+    padding: 3px 8px 4px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "head top" "hand hand" "act act";
+    column-gap: 12px;
+    align-items: end;
+  }
+  .seat-bottom .seat-head { grid-area: head; margin: 0; align-self: center; }
+  .seat-bottom .seat-head .score { margin-left: 10px; }
+  .mine-top { grid-area: top; margin: 0; min-height: calc(var(--ts) * 0.78 * 1.36 + 2px); flex-wrap: nowrap; overflow: hidden; }
+  .mine-top .tile { --w: calc(var(--ts) * 0.78); margin-bottom: 2px; }
+  .hand { grid-area: hand; padding-top: 8px; gap: 1px; flex-wrap: nowrap; }
+  .hand .tile.sel { transform: translateY(-8px); }
+  .hand .tile.drawn { margin-left: calc(var(--tw) * 0.35); }
+  .actionbar { grid-area: act; height: 26px; min-height: 0; margin-top: 2px; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }
+  .actionbar .prompt-text, .hint { font-size: 12px; flex-wrap: nowrap; }
+  .hint .tile { --w: 14px; }
+  .btn.ting { padding: 3px 10px; font-size: 13px; }
+
+  .callpop { min-width: 220px; width: auto; padding: 8px 12px 10px; }
+  .pop-title { font-size: 16px; margin-bottom: 4px; }
+  .pop-tile { margin-bottom: 6px; gap: 8px; }
+  .pop-tile .tile.big { --w: 30px; }
+  .pop-btns { gap: 6px; }
+  .pop-btns .btn { padding: 6px 12px; font-size: 15px; }
+
+  /* 對話框：矮螢幕改兩欄，盡量一頁看完 */
+  .overlay { padding: 8px; }
+  .modal { max-height: calc(100dvh - 16px); padding: 10px 14px; }
+  .modal:has(.set-list) { width: min(680px, 100%); }
+  .start-head { margin-bottom: 8px; }
+  .start-head h2 { font-size: 17px; }
+  .title-tiles .tile { --w: 18px; }
+  .set-list { grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+  .set-row { grid-template-columns: 40px 1fr; }
+  .seg-opt span { padding: 5px 2px; font-size: 13px; }
+  .check { margin-top: 8px; }
+  .modal-actions { margin-top: 8px; }
+  .btn.big { padding: 8px 20px; }
+  .big-result { font-size: 18px; }
+  .res-head { margin-bottom: 4px; }
+  .res-tai { font-size: 20px; }
+  .res-hand { padding: 4px; gap: 4px; }
+  .res-hand .tile { --w: min(calc((100vw - 90px) / 20), 26px); }
+  .chips { margin: 6px 0; }
+  .chip { font-size: 12px; padding: 1px 8px; }
+  .score-table { gap: 1px 14px; font-size: 13px; max-width: 340px; }
+  .others-wrap { margin-top: 4px; }
 }
